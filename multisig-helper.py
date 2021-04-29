@@ -504,7 +504,7 @@ def generate_key(name, ledger):
         return
 
     generate_key_command = ["terracli", "keys",
-                         "add", key_name, "--output=json"]
+                            "add", key_name, "--output=json"]
     if ledger:
         generate_key_command.append("--ledger")
 
@@ -527,6 +527,7 @@ def generate_key(name, ledger):
     print()
     share_pubkey_in_spreadsheet(json_result["name"], json_result["pubkey"], config["spreadsheet_id"])
 
+
 @cli.command()
 @click.option('--name', default="", help='Name of your key. By default your github username is used')
 @click.option('--ledger', default=False, help='Use a connected Ledger device', is_flag=True)
@@ -541,7 +542,7 @@ def share_pubkey(name, ledger):
         key_name = g.get_user().login
 
     get_key_command = ["terracli", "keys",
-                         "show", key_name, "-p"]
+                       "show", key_name, "-p"]
     if ledger:
         get_key_command.append("--ledger")
 
@@ -552,7 +553,82 @@ def share_pubkey(name, ledger):
         print("Error occurred:", result.stderr)
         exit(1)
 
-    share_pubkey_in_spreadsheet(key_name, result.stdout, config["spreadsheet_id"])
+    share_pubkey_in_spreadsheet(key_name, result.stdout.rstrip(), config["spreadsheet_id"])
+
+
+@cli.command()
+@click.option('--name', default="", help='Name of your personal key. By default your github username is used')
+@click.option('--ledger', default=False, help='Use a connected Ledger device', is_flag=True)
+def generate_multisig_key(name, ledger):
+    g = Github(get_github_access_token())
+    config = read_config()
+
+    key_name = name
+    if key_name == "":
+        key_name = g.get_user().login
+
+    sheet = get_sheet()
+    result = sheet.values().get(spreadsheetId=config["spreadsheet_id"],
+                                range="Participants!A2:B").execute()
+
+    for value in result["values"]:
+        if value[0] != key_name:
+            print("Adding key from %s..." % value[0])
+            # if key_exists(value[0], ledger):
+            #     print('Key with name "%s" already exists. Remove the existed key or rename it' % value[0])
+            #     continue
+
+            # add_pubkey_command = "terracli keys add %s --pubkey=%s" % (value[0], value[1])
+            # result = subprocess.run(add_pubkey_command.split(), capture_output=True, text=True)
+            # try:
+            #     result.check_returncode()
+            # except subprocess.CalledProcessError:
+            #     print("Error occurred:", result.stderr)
+            #     exit(1)
+            print("Done")
+
+    participants = sorted([x[0] for x in result["values"]])
+    multisig_account_name = "_".join(participants) + "_multisig"
+    create_multisig_account_command = ["terracli", "keys", "add", multisig_account_name,
+                                       "--multisig=%s" % ",".join(participants),
+                                       "--multisig-threshold=%d" % get_threshold_number(),
+                                       "--output=json"]
+    if ledger:
+        create_multisig_account_command.append("--ledger")
+
+    result = subprocess.run(create_multisig_account_command, capture_output=True, text=True)
+    try:
+        result.check_returncode()
+    except subprocess.CalledProcessError:
+        print("Error occurred:", result.stderr)
+        exit(1)
+
+    print()
+    print("Generating multisig account")
+    result = subprocess.run("terracli keys show %s --output=json" % multisig_account_name, capture_output=True, text=True, shell=True)
+    try:
+        result.check_returncode()
+    except subprocess.CalledProcessError:
+        print("Error occurred:", result.stderr)
+        exit(1)
+
+    json_result = json.loads(result.stdout)
+
+    print("multisig account name: %s" % json_result["name"])
+    print("multisig address: %s" % json_result["address"])
+    print("multisig pubkey: %s" % json_result["pubkey"])
+    print()
+
+    print("Updating Google Sheets...")
+    sheet = get_sheet()
+    body = {
+        'values': [[json_result["address"]]]
+    }
+
+    sheet.values().append(
+        spreadsheetId=config["spreadsheet_id"], range="Participants!I2",
+        body=body, valueInputOption="RAW").execute()
+    print("Done")
 
 
 if __name__ == '__main__':
