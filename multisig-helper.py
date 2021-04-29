@@ -574,17 +574,17 @@ def generate_multisig_key(name, ledger):
     for value in result["values"]:
         if value[0] != key_name:
             print("Adding key from %s..." % value[0])
-            # if key_exists(value[0], ledger):
-            #     print('Key with name "%s" already exists. Remove the existed key or rename it' % value[0])
-            #     continue
+            if key_exists(value[0], ledger):
+                print('Key with name "%s" already exists. Remove the existed key or rename it' % value[0])
+                continue
 
-            # add_pubkey_command = "terracli keys add %s --pubkey=%s" % (value[0], value[1])
-            # result = subprocess.run(add_pubkey_command.split(), capture_output=True, text=True)
-            # try:
-            #     result.check_returncode()
-            # except subprocess.CalledProcessError:
-            #     print("Error occurred:", result.stderr)
-            #     exit(1)
+            add_pubkey_command = "terracli keys add %s --pubkey=%s" % (value[0], value[1])
+            result = subprocess.run(add_pubkey_command.split(), capture_output=True, text=True)
+            try:
+                result.check_returncode()
+            except subprocess.CalledProcessError:
+                print("Error occurred:", result.stderr)
+                exit(1)
             print("Done")
 
     participants = sorted([x[0] for x in result["values"]])
