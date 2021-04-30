@@ -74,54 +74,6 @@ build_tags: netgo,ledger
 go: go version go1.13.4 darwin/amd64
 ```
 
-### Generate keys
-
-You'll need an account private and public key pair (a.k.a. sk, pk respectively) to be able to be a part of a multisig account.
-
-To generate an account, just use the following command:
-
-```shell
-foo@bar:~$ terracli keys add <yourKeyName>
-```
-
-* `yourKeyName` is the name of the account. It is a reference to the account number used to derive the key pair from the mnemonic. You will use this name to identify your account when you want to send a transaction.
-The command will generate a 24-words mnemonic and save the private and public keys for account 0 at the same time. You will be prompted to input a passphrase that is used to encrypt the private key of account 0 on disk. Each time you want to send a transaction, this password will be required. If you lose the password, you can always recover the private key with the mnemonic.
-  
-More info: https://docs.terra.money/terracli/keys.html#generate-keys-ledger
-
-### Share your public key
-
-After you successfully generated your keypair, you need to share your public key with other participants in `Participants` spreadsheet of the Google Sheets (link at the top of the instruction).
-
-Just copy a name and a public key of your previously generated account and fill in `Name` and `Pubkey` columns in the spreadsheet.
-
-Command to see your public key:
-
-```shell
-foo@bar:~$ terracli keys show <yourKeyName> -p
-```
-
-### Multisig
-
-#### Create the multisig key
-
-At first, you need to import every public key from the `Participants` spreadsheet in Google Sheets. To do this, execute every command from the thirdd column in the spreadsheet.
-
-After that, execute a command from `Command to generate a multisig` column to generate a multisig account and save it to your local keybase.
-
-You can see an info about your multisig account by running:
-```shell
-foo@bar:~$ terracli keys show <your_multisig_account_name>
-
-- name: <your_multisig_account_name>
-  type: multi
-  address: terra1e0fx0q9meawrcq7fmma9x60gk35lpr4xk3884m
-  pubkey: terrapub1ytql0csgqgfzd666axrjzq3mxw59ys6yqcd3ydjvhgs0uzs6kdk5fp4t73gmkl8t6y02yfq7tvfzd666axrjzq3sd69kp5usk492x6nehqjal67ynv0nfqapzrzy3gmdk27la0kjfqfzd666axrjzq6utqt639ka2j3xkncgk65dup06t297ccljmxhvhu3rmk92u3afjuyz9dg9
-  mnemonic: ""
-  threshold: 0
-  pubkeys: []
- ```
-
 ### Multisig Helper
 
 In a multisig process participants must sign transcations, share their individual signatures with other participants, someone must
@@ -161,22 +113,80 @@ Configuration of the script is located in `config.json` file:
 To see all possible commands of the script, run:
 ```shell
 foo@bar:~$ ./multisig-helper.py --help
+
 Usage: multisig-helper.py [OPTIONS] COMMAND [ARGS]...
 
 Options:
   --help  Show this message and exit.
 
 Commands:
-  issue-tx       if enough signatures, creates a multisig transaction and...
-  list-unsigned  Lists unsigned transactions (unmerged pull requests)
-  new-tx         Creates a new folder with unsigned_tx, makes a pull
-                 request...
+  generate-key               Generates personal Terra key, saves it to your...
+  generate-multisig-account  Imports public keys of another participants...
+  issue-tx                   If enough signatures, creates a multisig...
+  list-unsigned              Lists unsigned transactions (unmerged pull...
+  new-tx                     Creates a new folder with unsigned_tx, makes a...
+  share-pubkey               Updates the spreadsheet with the existed key
+  sign                       Signs tx and makes a commit to an
+                             corresponding...
 
-  sign           Signs tx and makes a commit to an corresponding PR...
-  update-tx      Updates a tx file in PR
+  update-tx                  Updates a tx file in PR
 ```
 
 To see more info about particular command, just specify `--help` flag when executing a command.
+
+##### Generate keys
+
+You'll need an account private and public key pair (a.k.a. sk, pk respectively) to be able to be a part of a multisig account.
+
+To generate an account, just use the following command:
+
+```shell
+foo@bar:~$ ./multisig-helper.py generate-key
+
+name: yourKeyName
+address: terra1x46rqay4d3cssq8gxxvqz8xt6nwlz4td20k38v
+pubkey: terrapub1addwnpepqgcxazmq6wgt2j4rdfumsfwla0zfk8e5sws3p3zg5dkm9007hmfysxas0u2
+
+**Important** write this mnemonic phrase in a safe place.
+            It is the only way to recover your account if you ever forget your password.
+
+Mnemonic: notice oak worry limit wrap speak medal online prefer cluster roof addict wrist behave treat actual wasp year salad speed social layer crew genius
+
+Updating Google Sheets...
+Done
+```
+
+* `yourKeyName` is the name of the account. It is a reference to the account number used to derive the key pair from the mnemonic. You will use this name to identify your account when you want to sign a transaction. The helper script uses your Github username by default, but you can change it by specifying `--name` flag in the command.
+The command will generate a 24-words mnemonic and save the private and public keys for account 0 at the same time. You can always recover the private key with the mnemonic.
+Additionally,  the command will update the spreadsheet in Google Sheets by adding your public key to i
+
+##### Create the multisig key
+
+To create a multisig account you need to import a public of every participant of the process and after that generate a multisig account and save it to your local keybase.
+
+That's a lot of commands, but with the helper script you can execute just one:
+
+```shell
+foo@bar:~$ ./multisig-helper.py generate-key
+
+Adding key from test3...
+Done
+Adding key from test1...
+Done
+
+Generating multisig account
+multisig account name: test1_test3_multisig
+multisig address: terra_some_address
+multisig pubkey: terrapub_some_public_key
+
+Updating Google Sheets...
+Done
+```
+
+The command will import public keys of another participants from the spreadsheet, generate a multisig account and update the spreadsheet with generated address of the multisig account
+
+
+### Example
 
 Let's see usage of the script on a little example where we want to send 5 Lunas from a multisig account (terra1e0fx0q9meawrcq7fmma9x60gk35lpr4xk3884m in our case) to terra17htaxslph9mvyunj4clgw9mcrglqjej4l6pcxg
 

@@ -559,7 +559,10 @@ def share_pubkey(name, ledger):
 @cli.command()
 @click.option('--name', default="", help='Name of your personal key. By default your github username is used')
 @click.option('--ledger', default=False, help='Use a connected Ledger device', is_flag=True)
-def generate_multisig_key(name, ledger):
+def generate_multisig_account(name, ledger):
+    """Imports public keys of another participants from the spreadsheet, generates a multisig account and updates
+    the spreadsheet with generated address of the multisig account"""
+
     g = Github(get_github_access_token())
     config = read_config()
 
