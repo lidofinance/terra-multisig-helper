@@ -21,11 +21,9 @@ GITHUB_OAUTH_ACCESS_TOKEN_ENDPOINT = "https://github.com/login/oauth/access_toke
 
 HEADERS = {"Accept": "application/vnd.github.v3+json"}
 
-CREDENTIALS_FILE = 'token.json'
 
-
-def get_sheet():
-    credentials = ServiceAccountCredentials.from_json_keyfile_name(CREDENTIALS_FILE, [
+def get_sheet(token_file):
+    credentials = ServiceAccountCredentials.from_json_keyfile_name(token_file, [
         'https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive'])
 
     httpAuth = credentials.authorize(httplib2.Http())
@@ -36,9 +34,9 @@ def get_sheet():
     return sheet
 
 
-def get_threshold_number():
+def get_threshold_number(token_file):
     config = read_config()
-    sheet = get_sheet()
+    sheet = get_sheet(token_file)
     result = sheet.values().get(spreadsheetId=config["spreadsheet_id"],
                                 range=config["threshold_coordinates"]).execute()
     return int(result["values"][0][0])
@@ -57,14 +55,14 @@ def get_multisig_address(multisig_account_name):
     return result.stdout.strip("\n")
 
 
-def read_access_token():
+def read_github_access_token():
     if os.path.isfile(TOKEN_FILE):
         with open(TOKEN_FILE) as f:
             return f.read()
     return None
 
 
-def save_token(access_token):
+def save_github_access_token(access_token):
     with open(TOKEN_FILE, "w+") as f:
         f.write(access_token)
         f.flush()
@@ -98,7 +96,7 @@ def key_exists(key_name, ledger):
 
 
 def get_github_access_token():
-    token = read_access_token()
+    token = read_github_access_token()
     if token is not None and is_token_valid(token):
         return token
 
@@ -127,7 +125,7 @@ def get_github_access_token():
                 continue
 
         if "access_token" in access_token_response.keys():
-            save_token(access_token_response["access_token"])
+            save_github_access_token(access_token_response["access_token"])
             return access_token_response["access_token"]
 
 
@@ -176,11 +174,12 @@ def list_unsigned():
 @click.argument('tx_id')
 @click.argument('account_name')
 @click.option('--chain-id', default="", help='Chain ID of tendermint node')
+@click.option('--google-api-token', default="token.json", help='Path to a Google API token. "token.json" by default')
 @click.option('--node', default="", help='<host>:<port> to tendermint rpc interface for this chain')
 @click.option('--ledger', default=False, help='Use a connected Ledger device', is_flag=True)
 @click.option('--multisig-account-name', default="multi", help='Name of the multisig account on your computer. '
                                                                '"multi" by default')
-def sign(tx_id, account_name, multisig_account_name, chain_id, node, ledger):
+def sign(tx_id, account_name, multisig_account_name, chain_id, node, ledger, google_api_token):
     """ Signs tx and makes a commit to an corresponding PR\n
     TX_ID is id of a transaction you want to sign (run **list-unsigned** command to see ids)\n
     ACCOUNT_NAME is the name of the your terracli account created previously"""
@@ -236,7 +235,7 @@ def sign(tx_id, account_name, multisig_account_name, chain_id, node, ledger):
     print("See signature on github: %s" % file["content"].html_url)
 
     print("Updating Google Sheets...")
-    sheet = get_sheet()
+    sheet = get_sheet(google_api_token)
     row = find_row_by_tx_id(tx_id)
     if row is None:
         print("TX #%d not found" % tx_id)
@@ -262,12 +261,13 @@ def sign(tx_id, account_name, multisig_account_name, chain_id, node, ledger):
 @cli.command()
 @click.argument('tx_id')
 @click.option('--broadcast', default=False, help='Send tx the blockchain', is_flag=True)
+@click.option('--google-api-token', default="token.json", help='Path to a Google API token. "token.json" by default')
 @click.option('--chain-id', default="", help='Chain ID of tendermint node')
 @click.option('--node', default="", help='<host>:<port> to tendermint rpc interface for this chain')
 @click.option('--ledger', default=False, help='Use a connected Ledger device', is_flag=True)
 @click.option('--multisig-account-name', default="multi", help='Name of the multisig account on your computer. '
                                                                '"multi" by default')
-def issue_tx(tx_id, broadcast, chain_id, multisig_account_name, node, ledger):
+def issue_tx(tx_id, broadcast, chain_id, multisig_account_name, node, ledger, google_api_token):
     """ If enough signatures, creates a multisig transaction and merges an corresponding PR\n
 
     TX_ID is id of a transaction you want to issue (run **list-unsigned** command to see ids)\n"""
@@ -337,7 +337,7 @@ def issue_tx(tx_id, broadcast, chain_id, multisig_account_name, node, ledger):
     print("PR #%d has merged successfully" % pull.number)
 
     print("Updating Google Sheets...")
-    sheet = get_sheet()
+    sheet = get_sheet(google_api_token)
     row = find_row_by_tx_id(tx_id)
     if row is None:
         print("TX #%d not found" % tx_id)
@@ -399,7 +399,8 @@ def issue_tx(tx_id, broadcast, chain_id, multisig_account_name, node, ledger):
 @click.argument('tx_file')
 @click.argument('account_name')
 @click.option('--description', default="", help='Description of the tx')
-def new_tx(tx_type, tx_file, account_name, description):
+@click.option('--google-api-token', default="token.json", help='Path to a Google API token. "token.json" by default')
+def new_tx(tx_type, tx_file, account_name, description, google_api_token):
     """Creates a new folder with unsigned_tx, makes a pull request and updates the Google Sheets spreadsheet\n
 
     TX_TYPE - a small title of the transaction (name, type, etc.)\n
@@ -431,7 +432,7 @@ def new_tx(tx_type, tx_file, account_name, description):
     print("See on Github: %s" % pr.html_url)
 
     print("Updating Google Sheets...")
-    sheet = get_sheet()
+    sheet = get_sheet(google_api_token)
     body = {
         'values': [[pr.number, description, time.date().strftime('%m/%d/%Y'), "Signing", account_name,
                     file["content"].html_url]]
@@ -471,10 +472,10 @@ def update_tx(tx_id, tx_file):
     print("See on Github: %s" % updated_file["content"].html_url)
 
 
-def share_pubkey_in_spreadsheet(keyname, pubkey, spreadsheet_id):
+def share_pubkey_in_spreadsheet(keyname, pubkey, spreadsheet_id, google_api_token):
     print("Updating Google Sheets...")
     add_pubkey_command = "terracli keys add %s --pubkey=%s" % (keyname, pubkey)
-    sheet = get_sheet()
+    sheet = get_sheet(google_api_token)
     body = {
         'values': [[keyname, pubkey, add_pubkey_command]]
     }
@@ -488,7 +489,8 @@ def share_pubkey_in_spreadsheet(keyname, pubkey, spreadsheet_id):
 @cli.command()
 @click.option('--name', default="", help='Name of your key. By default your github username is used')
 @click.option('--ledger', default=False, help='Use a connected Ledger device', is_flag=True)
-def generate_key(name, ledger):
+@click.option('--google-api-token', default="token.json", help='Path to a Google API token. "token.json" by default')
+def generate_key(name, ledger, google_api_token):
     """Generates personal Terra key, saves it to your local keybase (or ledger) and updates the spreadsheet"""
 
     g = Github(get_github_access_token())
@@ -525,13 +527,14 @@ def generate_key(name, ledger):
     print("Mnemonic: %s" % json_result["mnemonic"])
 
     print()
-    share_pubkey_in_spreadsheet(json_result["name"], json_result["pubkey"], config["spreadsheet_id"])
+    share_pubkey_in_spreadsheet(json_result["name"], json_result["pubkey"], config["spreadsheet_id"], google_api_token)
 
 
 @cli.command()
 @click.option('--name', default="", help='Name of your key. By default your github username is used')
 @click.option('--ledger', default=False, help='Use a connected Ledger device', is_flag=True)
-def share_pubkey(name, ledger):
+@click.option('--google-api-token', default="token.json", help='Path to a Google API token. "token.json" by default')
+def share_pubkey(name, ledger, google_api_token):
     """Updates the spreadsheet with the existed key"""
 
     g = Github(get_github_access_token())
@@ -553,13 +556,14 @@ def share_pubkey(name, ledger):
         print("Error occurred:", result.stderr)
         exit(1)
 
-    share_pubkey_in_spreadsheet(key_name, result.stdout.rstrip(), config["spreadsheet_id"])
+    share_pubkey_in_spreadsheet(key_name, result.stdout.rstrip(), config["spreadsheet_id"], google_api_token)
 
 
 @cli.command()
 @click.option('--name', default="", help='Name of your personal key. By default your github username is used')
 @click.option('--ledger', default=False, help='Use a connected Ledger device', is_flag=True)
-def generate_multisig_account(name, ledger):
+@click.option('--google-api-token', default="token.json", help='Path to a Google API token. "token.json" by default')
+def generate_multisig_account(name, ledger, google_api_token):
     """Imports public keys of another participants from the spreadsheet, generates a multisig account and updates
     the spreadsheet with generated address of the multisig account"""
 
@@ -623,7 +627,7 @@ def generate_multisig_account(name, ledger):
     print()
 
     print("Updating Google Sheets...")
-    sheet = get_sheet()
+    sheet = get_sheet(google_api_token)
     body = {
         'values': [[json_result["address"]]]
     }
