@@ -95,6 +95,16 @@ def key_exists(key_name, ledger):
     return True
 
 
+def get_multisig_account_name(google_api_token):
+    config = read_config()
+    sheet = get_sheet(google_api_token)
+    result = sheet.values().get(spreadsheetId=config["spreadsheet_id"],
+                                range="Participants!A2:B").execute()
+
+    participants = sorted([x[0] for x in result["values"]])
+    return "_".join(participants) + "_multisig"
+
+
 def get_github_access_token():
     token = read_github_access_token()
     if token is not None and is_token_valid(token):
@@ -134,9 +144,9 @@ def read_config(config="config.json"):
         return json.loads(f.read())
 
 
-def find_row_by_tx_id(tx_id):
+def find_row_by_tx_id(tx_id, google_api_token):
     config = read_config()
-    sheet = get_sheet()
+    sheet = get_sheet(google_api_token)
     result = sheet.values().get(spreadsheetId=config["spreadsheet_id"],
                                 range='Process!A2:A').execute()
     for i in range(len(result["values"])):
@@ -172,20 +182,25 @@ def list_unsigned():
 
 @cli.command()
 @click.argument('tx_id')
-@click.argument('account_name')
+@click.option('--account-name', default="", help='Name of your key. By default your github username is used')
 @click.option('--chain-id', default="", help='Chain ID of tendermint node')
 @click.option('--google-api-token', default="token.json", help='Path to a Google API token. "token.json" by default')
 @click.option('--node', default="", help='<host>:<port> to tendermint rpc interface for this chain')
 @click.option('--ledger', default=False, help='Use a connected Ledger device', is_flag=True)
-@click.option('--multisig-account-name', default="multi", help='Name of the multisig account on your computer. '
-                                                               '"multi" by default')
+@click.option('--multisig-account-name', default="", help='Name of the multisig account on your computer. '
+                                                          'Gets from the spreadsheet by default')
 def sign(tx_id, account_name, multisig_account_name, chain_id, node, ledger, google_api_token):
     """ Signs tx and makes a commit to an corresponding PR\n
-    TX_ID is id of a transaction you want to sign (run **list-unsigned** command to see ids)\n
-    ACCOUNT_NAME is the name of the your terracli account created previously"""
+    TX_ID is id of a transaction you want to sign (run **list-unsigned** command to see ids)"""
 
     g = Github(get_github_access_token())
     config = read_config()
+
+    if account_name == "":
+        account_name = g.get_user().login
+
+    if multisig_account_name == "":
+        multisig_account_name = get_multisig_account_name(google_api_token)
 
     repo = g.get_repo(config["repo_name"])
     pull = repo.get_pull(int(tx_id))
@@ -236,7 +251,7 @@ def sign(tx_id, account_name, multisig_account_name, chain_id, node, ledger, goo
 
     print("Updating Google Sheets...")
     sheet = get_sheet(google_api_token)
-    row = find_row_by_tx_id(tx_id)
+    row = find_row_by_tx_id(tx_id, google_api_token)
     if row is None:
         print("TX #%d not found" % tx_id)
         exit(1)
@@ -265,8 +280,8 @@ def sign(tx_id, account_name, multisig_account_name, chain_id, node, ledger, goo
 @click.option('--chain-id', default="", help='Chain ID of tendermint node')
 @click.option('--node', default="", help='<host>:<port> to tendermint rpc interface for this chain')
 @click.option('--ledger', default=False, help='Use a connected Ledger device', is_flag=True)
-@click.option('--multisig-account-name', default="multi", help='Name of the multisig account on your computer. '
-                                                               '"multi" by default')
+@click.option('--multisig-account-name', default="", help='Name of the multisig account on your computer. '
+                                                          'Gets from the spreadsheet by default')
 def issue_tx(tx_id, broadcast, chain_id, multisig_account_name, node, ledger, google_api_token):
     """ If enough signatures, creates a multisig transaction and merges an corresponding PR\n
 
@@ -279,6 +294,9 @@ def issue_tx(tx_id, broadcast, chain_id, multisig_account_name, node, ledger, go
     pull = repo.get_pull(int(tx_id))
     files = pull.get_files()
 
+    if multisig_account_name == "":
+        multisig_account_name = get_multisig_account_name(google_api_token)
+
     unsigned_tx_filename = list(
         filter(lambda f: f.filename.endswith("unsigned_tx.json"), files))
     if len(unsigned_tx_filename) == 0:
@@ -288,7 +306,7 @@ def issue_tx(tx_id, broadcast, chain_id, multisig_account_name, node, ledger, go
     sigs_files = list(
         filter(lambda f: not f.filename.endswith("unsigned_tx.json"), files))
 
-    if len(sigs_files) < get_threshold_number():
+    if len(sigs_files) < get_threshold_number(google_api_token):
         print("Not enough signatures")
         exit(1)
 
@@ -338,7 +356,7 @@ def issue_tx(tx_id, broadcast, chain_id, multisig_account_name, node, ledger, go
 
     print("Updating Google Sheets...")
     sheet = get_sheet(google_api_token)
-    row = find_row_by_tx_id(tx_id)
+    row = find_row_by_tx_id(tx_id, google_api_token)
     if row is None:
         print("TX #%d not found" % tx_id)
         exit(1)
@@ -387,31 +405,41 @@ def issue_tx(tx_id, broadcast, chain_id, multisig_account_name, node, ledger, go
         body = {
             'values': [[result_json["txhash"]]]
         }
-
         sheet.values().update(
             spreadsheetId=config["spreadsheet_id"], range="Process!H%d" % row,
             valueInputOption="RAW", body=body).execute()
+
+        body = {
+            'values': [["Broadcast"]]
+        }
+        sheet.values().update(
+            spreadsheetId=config["spreadsheet_id"], range="Process!D%d" % row,
+            valueInputOption="RAW", body=body).execute()
         print("Done")
+
+        print("TX hash: %s" % result_json["txhash"])
 
 
 @cli.command()
 @click.argument('tx_type')
 @click.argument('tx_file')
-@click.argument('account_name')
+@click.option('--account-name', default="", help='Name of your key. By default your github username is used')
 @click.option('--description', default="", help='Description of the tx')
 @click.option('--google-api-token', default="token.json", help='Path to a Google API token. "token.json" by default')
 def new_tx(tx_type, tx_file, account_name, description, google_api_token):
     """Creates a new folder with unsigned_tx, makes a pull request and updates the Google Sheets spreadsheet\n
 
     TX_TYPE - a small title of the transaction (name, type, etc.)\n
-    TX_FILE - a path to an unsigned tx file\n
-    ACCOUNT_NAME is the name of the your terracli account created previously"""
+    TX_FILE - a path to an unsigned tx file"""
 
     if description == "":
         description = tx_type
 
     g = Github(get_github_access_token())
     config = read_config()
+
+    if account_name == "":
+        account_name = g.get_user().login
 
     time = datetime.datetime.now()
     tx = open(tx_file).read()
@@ -574,7 +602,7 @@ def generate_multisig_account(name, ledger, google_api_token):
     if key_name == "":
         key_name = g.get_user().login
 
-    sheet = get_sheet()
+    sheet = get_sheet(google_api_token)
     result = sheet.values().get(spreadsheetId=config["spreadsheet_id"],
                                 range="Participants!A2:B").execute()
 
@@ -598,7 +626,7 @@ def generate_multisig_account(name, ledger, google_api_token):
     multisig_account_name = "_".join(participants) + "_multisig"
     create_multisig_account_command = ["terracli", "keys", "add", multisig_account_name,
                                        "--multisig=%s" % ",".join(participants),
-                                       "--multisig-threshold=%d" % get_threshold_number(),
+                                       "--multisig-threshold=%d" % get_threshold_number(google_api_token),
                                        "--output=json"]
     if ledger:
         create_multisig_account_command.append("--ledger")
@@ -612,7 +640,8 @@ def generate_multisig_account(name, ledger, google_api_token):
 
     print()
     print("Generating multisig account")
-    result = subprocess.run("terracli keys show %s --output=json" % multisig_account_name, capture_output=True, text=True, shell=True)
+    result = subprocess.run("terracli keys show %s --output=json" % multisig_account_name, capture_output=True,
+                            text=True, shell=True)
     try:
         result.check_returncode()
     except subprocess.CalledProcessError:
@@ -631,10 +660,17 @@ def generate_multisig_account(name, ledger, google_api_token):
     body = {
         'values': [[json_result["address"]]]
     }
-
-    sheet.values().append(
+    sheet.values().update(
         spreadsheetId=config["spreadsheet_id"], range="Participants!I2",
         body=body, valueInputOption="RAW").execute()
+
+    body = {
+        'values': [[" ".join(create_multisig_account_command)]]
+    }
+    sheet.values().update(
+        spreadsheetId=config["spreadsheet_id"], range="Participants!E2",
+        body=body, valueInputOption="RAW").execute()
+
     print("Done")
 
 
