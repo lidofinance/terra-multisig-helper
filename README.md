@@ -108,6 +108,11 @@ Configuration of the script is located in `config.json` file:
 }
 ```
 
+#### Networks
+| Chain ID       | Description        | RPC Node                      |
+| -------------- | ------------------ | ----------------------------- |
+| `tequila-0004` | Columbus-4 Testnet | http://15.164.0.235:26657     |
+
 #### Usage
 
 To see all possible commands of the script, run:
