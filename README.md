@@ -95,7 +95,7 @@ foo@bar:~$ cd terra-multisig-testnet
 foo@bar:~$ pip3 install -r requirements.txt
 ```
 
-#### Configuration (Optional)
+#### Configuration file
 
 Configuration of the script is located in `config.json` file:
 
@@ -107,6 +107,13 @@ Configuration of the script is located in `config.json` file:
     "threshold_coordinates": "Participants!F2" // ID of a cell contained threshold number
 }
 ```
+
+You don't have to fill the file manually, a correct one will be shared in the private TG group.
+
+#### Google API token
+A pre-generated Google API token (with editor rights to the testnet spreadsheet only) will be shared in the private TG group.
+
+But just in case there is an [instruction](https://github.com/lidofinance/terra-multisig-helper/blob/master/GOOGLE_SHEETS_TOKEN.md) on how to generate the service token manually.
 
 #### Networks
 | Chain ID       | Description        | RPC Node                      |
