@@ -103,8 +103,7 @@ Configuration of the script is located in `config.json` file:
 {
     "repo_name": "lidofinance/terra-multisig-testnet", // Name of the repository where signatures and transations will be located
     "app_client_id": "XXXXXXXXX", // Client ID of Github App
-    "spreadsheet_id": "XXXXXXXX", // ID of a spreadsheet contained tx and participants info
-    "threshold_coordinates": "Participants!F2" // ID of a cell contained threshold number
+    "spreadsheet_id": "XXXXXXXX" // ID of a spreadsheet contained tx and participants info
 }
 ```
 

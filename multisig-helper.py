@@ -21,6 +21,17 @@ GITHUB_OAUTH_ACCESS_TOKEN_ENDPOINT = "https://github.com/login/oauth/access_toke
 
 HEADERS = {"Accept": "application/vnd.github.v3+json"}
 
+PARTICIPANTS_PUBKEY_CELLS = "Participants!A2:B"
+TX_ID_CELLS = "Process!A2:A"
+SIGNED_BY_CELL = "Process!G%d"
+TX_STATUS_CELL = "Process!D%d"
+TX_HASH_CELL = "Process!H%d"
+TX_CELLS = "Process!A2:G2"
+PARTICIPANTS_CELLS = "Participants!A2:C2"
+MULTISIG_ADDRESS_CELL = "Participants!I2"
+GENERATE_MULTISIG_COMMAND_CELL = "Participants!E2"
+THRESHOLD_CELL = "Participants!F2"
+
 
 def get_sheet(token_file):
     credentials = ServiceAccountCredentials.from_json_keyfile_name(token_file, [
@@ -38,7 +49,7 @@ def get_threshold_number(token_file):
     config = read_config()
     sheet = get_sheet(token_file)
     result = sheet.values().get(spreadsheetId=config["spreadsheet_id"],
-                                range=config["threshold_coordinates"]).execute()
+                                range=THRESHOLD_CELL).execute()
     return int(result["values"][0][0])
 
 
@@ -99,7 +110,7 @@ def get_multisig_account_name(google_api_token):
     config = read_config()
     sheet = get_sheet(google_api_token)
     result = sheet.values().get(spreadsheetId=config["spreadsheet_id"],
-                                range="Participants!A2:B").execute()
+                                range=PARTICIPANTS_PUBKEY_CELLS).execute()
 
     participants = sorted([x[0] for x in result["values"]])
     return "_".join(participants) + "_multisig"
@@ -148,7 +159,7 @@ def find_row_by_tx_id(tx_id, google_api_token):
     config = read_config()
     sheet = get_sheet(google_api_token)
     result = sheet.values().get(spreadsheetId=config["spreadsheet_id"],
-                                range='Process!A2:A').execute()
+                                range=TX_ID_CELLS).execute()
     for i in range(len(result["values"])):
         if len(result["values"]) > 0 and result["values"][i][0] == tx_id:
             return i + 2  # cause first line is header
@@ -257,7 +268,7 @@ def sign(tx_id, account_name, multisig_account_name, chain_id, node, ledger, goo
         exit(1)
 
     signed_by = sheet.values().get(spreadsheetId=config["spreadsheet_id"],
-                                   range="Process!G%d" % row).execute()
+                                   range=SIGNED_BY_CELL % row).execute()
     if "values" not in signed_by.keys():
         signed_by["values"] = [[account_name]]
     else:
@@ -268,7 +279,7 @@ def sign(tx_id, account_name, multisig_account_name, chain_id, node, ledger, goo
     }
 
     sheet.values().update(
-        spreadsheetId=config["spreadsheet_id"], range="Process!G%d" % row,
+        spreadsheetId=config["spreadsheet_id"], range=SIGNED_BY_CELL % row,
         valueInputOption="RAW", body=body).execute()
     print("Done")
 
@@ -362,7 +373,7 @@ def issue_tx(tx_id, broadcast, chain_id, multisig_account_name, node, ledger, go
         exit(1)
 
     status = sheet.values().get(spreadsheetId=config["spreadsheet_id"],
-                                range="Process!D%d" % row).execute()
+                                range=TX_STATUS_CELL % row).execute()
     status["values"] = [["Signed"]]
 
     body = {
@@ -370,7 +381,7 @@ def issue_tx(tx_id, broadcast, chain_id, multisig_account_name, node, ledger, go
     }
 
     sheet.values().update(
-        spreadsheetId=config["spreadsheet_id"], range="Process!D%d" % row,
+        spreadsheetId=config["spreadsheet_id"], range=TX_STATUS_CELL % row,
         valueInputOption="RAW", body=body).execute()
     print("Done")
 
@@ -406,14 +417,14 @@ def issue_tx(tx_id, broadcast, chain_id, multisig_account_name, node, ledger, go
             'values': [[result_json["txhash"]]]
         }
         sheet.values().update(
-            spreadsheetId=config["spreadsheet_id"], range="Process!H%d" % row,
+            spreadsheetId=config["spreadsheet_id"], range=TX_HASH_CELL % row,
             valueInputOption="RAW", body=body).execute()
 
         body = {
             'values': [["Broadcast"]]
         }
         sheet.values().update(
-            spreadsheetId=config["spreadsheet_id"], range="Process!D%d" % row,
+            spreadsheetId=config["spreadsheet_id"], range=TX_STATUS_CELL % row,
             valueInputOption="RAW", body=body).execute()
         print("Done")
 
@@ -467,7 +478,7 @@ def new_tx(tx_type, tx_file, account_name, description, google_api_token):
     }
 
     sheet.values().append(
-        spreadsheetId=config["spreadsheet_id"], range="Process!A2:G2",
+        spreadsheetId=config["spreadsheet_id"], range=TX_CELLS,
         body=body, valueInputOption="RAW").execute()
     print("Done")
 
@@ -509,7 +520,7 @@ def share_pubkey_in_spreadsheet(keyname, pubkey, spreadsheet_id, google_api_toke
     }
 
     sheet.values().append(
-        spreadsheetId=spreadsheet_id, range="Participants!A2:C2",
+        spreadsheetId=spreadsheet_id, range=PARTICIPANTS_CELLS,
         body=body, valueInputOption="RAW").execute()
     print("Done")
 
@@ -604,7 +615,7 @@ def generate_multisig_account(name, ledger, google_api_token):
 
     sheet = get_sheet(google_api_token)
     result = sheet.values().get(spreadsheetId=config["spreadsheet_id"],
-                                range="Participants!A2:B").execute()
+                                range=PARTICIPANTS_PUBKEY_CELLS).execute()
 
     for value in result["values"]:
         if value[0] != key_name:
@@ -661,14 +672,14 @@ def generate_multisig_account(name, ledger, google_api_token):
         'values': [[json_result["address"]]]
     }
     sheet.values().update(
-        spreadsheetId=config["spreadsheet_id"], range="Participants!I2",
+        spreadsheetId=config["spreadsheet_id"], range=MULTISIG_ADDRESS_CELL,
         body=body, valueInputOption="RAW").execute()
 
     body = {
         'values': [[" ".join(create_multisig_account_command)]]
     }
     sheet.values().update(
-        spreadsheetId=config["spreadsheet_id"], range="Participants!E2",
+        spreadsheetId=config["spreadsheet_id"], range=GENERATE_MULTISIG_COMMAND_CELL,
         body=body, valueInputOption="RAW").execute()
 
     print("Done")
