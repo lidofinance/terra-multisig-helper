@@ -14,7 +14,7 @@ import httplib2
 import apiclient.discovery
 from oauth2client.service_account import ServiceAccountCredentials
 
-TOKEN_FILE = ".token"
+GITHUB_API_TOKEN_FILE = ".token"
 
 GITHUB_OAUTH_CODE_ENDPOINT = "https://github.com/login/device/code"
 GITHUB_OAUTH_ACCESS_TOKEN_ENDPOINT = "https://github.com/login/oauth/access_token"
@@ -37,16 +37,15 @@ def get_sheet(token_file):
     credentials = ServiceAccountCredentials.from_json_keyfile_name(token_file, [
         'https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive'])
 
-    httpAuth = credentials.authorize(httplib2.Http())
-    service = apiclient.discovery.build('sheets', 'v4', http=httpAuth)
+    http_auth = credentials.authorize(httplib2.Http())
+    service = apiclient.discovery.build('sheets', 'v4', http=http_auth)
 
     sheet = service.spreadsheets()
 
     return sheet
 
 
-def get_threshold_number(token_file):
-    config = read_config()
+def get_threshold_number(config, token_file):
     sheet = get_sheet(token_file)
     result = sheet.values().get(spreadsheetId=config["spreadsheet_id"],
                                 range=THRESHOLD_CELL).execute()
@@ -67,22 +66,21 @@ def get_multisig_address(multisig_account_name):
 
 
 def read_github_access_token():
-    if os.path.isfile(TOKEN_FILE):
-        with open(TOKEN_FILE) as f:
+    if os.path.isfile(GITHUB_API_TOKEN_FILE):
+        with open(GITHUB_API_TOKEN_FILE) as f:
             return f.read()
     return None
 
 
 def save_github_access_token(access_token):
-    with open(TOKEN_FILE, "w+") as f:
+    with open(GITHUB_API_TOKEN_FILE, "w+") as f:
         f.write(access_token)
         f.flush()
 
 
-def is_token_valid(access_token):
+def is_token_valid(config, access_token):
     g = Github(access_token)
     try:
-        config = read_config()
         g.get_repo(config["repo_name"])
     except BadCredentialsException:
         return False
@@ -106,8 +104,7 @@ def key_exists(key_name, ledger):
     return True
 
 
-def get_multisig_account_name(google_api_token):
-    config = read_config()
+def get_multisig_account_name(config, google_api_token):
     sheet = get_sheet(google_api_token)
     result = sheet.values().get(spreadsheetId=config["spreadsheet_id"],
                                 range=PARTICIPANTS_PUBKEY_CELLS).execute()
@@ -116,12 +113,10 @@ def get_multisig_account_name(google_api_token):
     return "_".join(participants) + "_multisig"
 
 
-def get_github_access_token():
+def get_github_access_token(config):
     token = read_github_access_token()
-    if token is not None and is_token_valid(token):
+    if token is not None and is_token_valid(config, token):
         return token
-
-    config = read_config()
 
     resp = json.loads(requests.post(GITHUB_OAUTH_CODE_ENDPOINT, data={
         "client_id": config["app_client_id"], "scope": "repo"}, headers=HEADERS).text)
@@ -150,13 +145,12 @@ def get_github_access_token():
             return access_token_response["access_token"]
 
 
-def read_config(config="config.json"):
+def read_config(config):
     with open(config) as f:
         return json.loads(f.read())
 
 
-def find_row_by_tx_id(tx_id, google_api_token):
-    config = read_config()
+def find_row_by_tx_id(config, tx_id, google_api_token):
     sheet = get_sheet(google_api_token)
     result = sheet.values().get(spreadsheetId=config["spreadsheet_id"],
                                 range=TX_ID_CELLS).execute()
@@ -172,12 +166,13 @@ def cli():
 
 
 @cli.command()
-def list_unsigned():
+@click.option('--config-path', default="config.json", help='Path to a config file. "config.json" by default')
+def list_unsigned(config_path):
     """ Lists unsigned transactions (unmerged pull requests) """
 
-    config = read_config()
+    config = read_config(config_path)
 
-    g = Github(get_github_access_token())
+    g = Github(get_github_access_token(config))
     repo = g.get_repo(config["repo_name"])
 
     pulls = repo.get_pulls(state='open', sort='created', base='master')
@@ -200,18 +195,19 @@ def list_unsigned():
 @click.option('--ledger', default=False, help='Use a connected Ledger device', is_flag=True)
 @click.option('--multisig-account-name', default="", help='Name of the multisig account on your computer. '
                                                           'Gets from the spreadsheet by default')
-def sign(tx_id, account_name, multisig_account_name, chain_id, node, ledger, google_api_token):
+@click.option('--config-path', default="config.json", help='Path to a config file. "config.json" by default')
+def sign(tx_id, account_name, multisig_account_name, chain_id, node, ledger, google_api_token, config_path):
     """ Signs tx and makes a commit to an corresponding PR\n
     TX_ID is id of a transaction you want to sign (run **list-unsigned** command to see ids)"""
 
-    g = Github(get_github_access_token())
-    config = read_config()
+    config = read_config(config_path)
+    g = Github(get_github_access_token(config))
 
     if account_name == "":
         account_name = g.get_user().login
 
     if multisig_account_name == "":
-        multisig_account_name = get_multisig_account_name(google_api_token)
+        multisig_account_name = get_multisig_account_name(config, google_api_token)
 
     repo = g.get_repo(config["repo_name"])
     pull = repo.get_pull(int(tx_id))
@@ -262,7 +258,7 @@ def sign(tx_id, account_name, multisig_account_name, chain_id, node, ledger, goo
 
     print("Updating Google Sheets...")
     sheet = get_sheet(google_api_token)
-    row = find_row_by_tx_id(tx_id, google_api_token)
+    row = find_row_by_tx_id(config, tx_id, google_api_token)
     if row is None:
         print("TX #%d not found" % tx_id)
         exit(1)
@@ -293,31 +289,32 @@ def sign(tx_id, account_name, multisig_account_name, chain_id, node, ledger, goo
 @click.option('--ledger', default=False, help='Use a connected Ledger device', is_flag=True)
 @click.option('--multisig-account-name', default="", help='Name of the multisig account on your computer. '
                                                           'Gets from the spreadsheet by default')
-def issue_tx(tx_id, broadcast, chain_id, multisig_account_name, node, ledger, google_api_token):
+@click.option('--config-path', default="config.json", help='Path to a config file. "config.json" by default')
+def issue_tx(tx_id, broadcast, chain_id, multisig_account_name, node, ledger, google_api_token, config_path):
     """ If enough signatures, creates a multisig transaction and merges an corresponding PR\n
 
     TX_ID is id of a transaction you want to issue (run **list-unsigned** command to see ids)\n"""
 
-    g = Github(get_github_access_token())
-    config = read_config()
+    config = read_config(config_path)
+    g = Github(get_github_access_token(config))
 
     repo = g.get_repo(config["repo_name"])
     pull = repo.get_pull(int(tx_id))
     files = pull.get_files()
 
     if multisig_account_name == "":
-        multisig_account_name = get_multisig_account_name(google_api_token)
+        multisig_account_name = get_multisig_account_name(config, google_api_token)
 
     unsigned_tx_filename = list(
-        filter(lambda f: f.filename.endswith("unsigned_tx.json"), files))
+        filter(lambda item: item.filename.endswith("unsigned_tx.json"), files))
     if len(unsigned_tx_filename) == 0:
         print("Failed to get unsigned_tx.json")
         exit(1)
 
     sigs_files = list(
-        filter(lambda f: not f.filename.endswith("unsigned_tx.json"), files))
+        filter(lambda item: not item.filename.endswith("unsigned_tx.json"), files))
 
-    if len(sigs_files) < get_threshold_number(google_api_token):
+    if len(sigs_files) < get_threshold_number(config, google_api_token):
         print("Not enough signatures")
         exit(1)
 
@@ -367,7 +364,7 @@ def issue_tx(tx_id, broadcast, chain_id, multisig_account_name, node, ledger, go
 
     print("Updating Google Sheets...")
     sheet = get_sheet(google_api_token)
-    row = find_row_by_tx_id(tx_id, google_api_token)
+    row = find_row_by_tx_id(config, tx_id, google_api_token)
     if row is None:
         print("TX #%d not found" % tx_id)
         exit(1)
@@ -437,7 +434,8 @@ def issue_tx(tx_id, broadcast, chain_id, multisig_account_name, node, ledger, go
 @click.option('--account-name', default="", help='Name of your key. By default your github username is used')
 @click.option('--description', default="", help='Description of the tx')
 @click.option('--google-api-token', default="token.json", help='Path to a Google API token. "token.json" by default')
-def new_tx(tx_type, tx_file, account_name, description, google_api_token):
+@click.option('--config-path', default="config.json", help='Path to a config file. "config.json" by default')
+def new_tx(tx_type, tx_file, account_name, description, google_api_token, config_path):
     """Creates a new folder with unsigned_tx, makes a pull request and updates the Google Sheets spreadsheet\n
 
     TX_TYPE - a small title of the transaction (name, type, etc.)\n
@@ -446,16 +444,16 @@ def new_tx(tx_type, tx_file, account_name, description, google_api_token):
     if description == "":
         description = tx_type
 
-    g = Github(get_github_access_token())
-    config = read_config()
+    config = read_config(config_path)
+    g = Github(get_github_access_token(config))
 
     if account_name == "":
         account_name = g.get_user().login
 
-    time = datetime.datetime.now()
+    current_time = datetime.datetime.now()
     tx = open(tx_file).read()
 
-    folder_name = "%s_%s" % (tx_type, time.date())
+    folder_name = "%s_%s" % (tx_type, current_time.date())
 
     repo = g.get_repo(config["repo_name"])
     master_sha = repo.get_git_ref("heads/master").object.sha
@@ -473,7 +471,7 @@ def new_tx(tx_type, tx_file, account_name, description, google_api_token):
     print("Updating Google Sheets...")
     sheet = get_sheet(google_api_token)
     body = {
-        'values': [[pr.number, description, time.date().strftime('%m/%d/%Y'), "Signing", account_name,
+        'values': [[pr.number, description, current_time.date().strftime('%m/%d/%Y'), "Signing", account_name,
                     file["content"].html_url]]
     }
 
@@ -486,11 +484,12 @@ def new_tx(tx_type, tx_file, account_name, description, google_api_token):
 @cli.command()
 @click.argument('tx_id')
 @click.argument('tx_file')
-def update_tx(tx_id, tx_file):
+@click.option('--config-path', default="config.json", help='Path to a config file. "config.json" by default')
+def update_tx(tx_id, tx_file, config_path):
     """Updates a tx file in PR\n"""
 
-    g = Github(get_github_access_token())
-    config = read_config()
+    config = read_config(config_path)
+    g = Github(get_github_access_token(config))
 
     tx = open(tx_file).read()
 
@@ -529,11 +528,12 @@ def share_pubkey_in_spreadsheet(keyname, pubkey, spreadsheet_id, google_api_toke
 @click.option('--name', default="", help='Name of your key. By default your github username is used')
 @click.option('--ledger', default=False, help='Use a connected Ledger device', is_flag=True)
 @click.option('--google-api-token', default="token.json", help='Path to a Google API token. "token.json" by default')
-def generate_key(name, ledger, google_api_token):
+@click.option('--config-path', default="config.json", help='Path to a config file. "config.json" by default')
+def generate_key(name, ledger, google_api_token, config_path):
     """Generates personal Terra key, saves it to your local keybase (or ledger) and updates the spreadsheet"""
 
-    g = Github(get_github_access_token())
-    config = read_config()
+    config = read_config(config_path)
+    g = Github(get_github_access_token(config))
 
     key_name = name
     if key_name == "":
@@ -573,11 +573,12 @@ def generate_key(name, ledger, google_api_token):
 @click.option('--name', default="", help='Name of your key. By default your github username is used')
 @click.option('--ledger', default=False, help='Use a connected Ledger device', is_flag=True)
 @click.option('--google-api-token', default="token.json", help='Path to a Google API token. "token.json" by default')
-def share_pubkey(name, ledger, google_api_token):
+@click.option('--config-path', default="config.json", help='Path to a config file. "config.json" by default')
+def share_pubkey(name, ledger, google_api_token, config_path):
     """Updates the spreadsheet with the existed key"""
 
-    g = Github(get_github_access_token())
-    config = read_config()
+    config = read_config(config_path)
+    g = Github(get_github_access_token(config))
 
     key_name = name
     if key_name == "":
@@ -602,12 +603,13 @@ def share_pubkey(name, ledger, google_api_token):
 @click.option('--name', default="", help='Name of your personal key. By default your github username is used')
 @click.option('--ledger', default=False, help='Use a connected Ledger device', is_flag=True)
 @click.option('--google-api-token', default="token.json", help='Path to a Google API token. "token.json" by default')
-def generate_multisig_account(name, ledger, google_api_token):
+@click.option('--config-path', default="config.json", help='Path to a config file. "config.json" by default')
+def generate_multisig_account(name, ledger, google_api_token, config_path):
     """Imports public keys of another participants from the spreadsheet, generates a multisig account and updates
     the spreadsheet with generated address of the multisig account"""
 
-    g = Github(get_github_access_token())
-    config = read_config()
+    config = read_config(config_path)
+    g = Github(get_github_access_token(config))
 
     key_name = name
     if key_name == "":
@@ -637,7 +639,7 @@ def generate_multisig_account(name, ledger, google_api_token):
     multisig_account_name = "_".join(participants) + "_multisig"
     create_multisig_account_command = ["terracli", "keys", "add", multisig_account_name,
                                        "--multisig=%s" % ",".join(participants),
-                                       "--multisig-threshold=%d" % get_threshold_number(google_api_token),
+                                       "--multisig-threshold=%d" % get_threshold_number(config, google_api_token),
                                        "--output=json"]
     if ledger:
         create_multisig_account_command.append("--ledger")
