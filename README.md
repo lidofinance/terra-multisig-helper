@@ -76,6 +76,9 @@ go: go version go1.13.4 darwin/amd64
 
 ### Multisig Helper
 
+#### *Disclaimer*
+**At the first launch, you will be redirected to the authorization page for the Github App with permission to grant access to the account. It looks scary, but no one but you will have access to your private repositories and personal data. The helper script needs to get an Oauth token so that you can automatically create commits, pull requests and other stuff in our private repository (lido-multisigs/terra-testnet-multisigs). The token is stored only on your device (.token file in the root of repository) and is not sent anywhere. You can revoke access at any time here: https://github.com/settings/apps/authorizations**
+
 In a multisig process participants must sign transcations, share their individual signatures with other participants, someone must
 collect them, create final mutlisig transaction and broadcast it. In addition, participants should fill in Google Sheets spreadsheet to store an info about transactions.
 This process is a boring and tedious so we've developed a script called `multsig_helper.py`.
