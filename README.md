@@ -2,6 +2,9 @@
 
 ### Installing Terra software from prebuilt binaries
 
+**There is no support of ledger devices in these prebuilt binaries. So if you want to use ledger, build binaries from sources (instructions below)**
+
+
 #### Step 1. Download binaries
 
 Download an archive with binaries for your platform from the official Terra [repository](https://github.com/terra-project/core/releases/tag/v0.4.4)
