@@ -184,7 +184,7 @@ To create a multisig account you need to import a public of every participant of
 That's a lot of commands, but with the helper script you can execute just one:
 
 ```shell
-foo@bar:~$ ./multisig-helper.py generate-key
+foo@bar:~$ ./multisig-helper.py generate-multisig-account
 
 Adding key from test3...
 Done

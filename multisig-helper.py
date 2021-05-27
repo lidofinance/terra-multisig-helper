@@ -561,9 +561,10 @@ def generate_key(name, ledger, google_api_token, config_path):
     print("name: %s" % json_result["name"])
     print("address: %s" % json_result["address"])
     print("pubkey: %s" % json_result["pubkey"])
-    print("""\n**Important** write this mnemonic phrase in a safe place.
+    if not ledger:
+        print("""\n**Important** write this mnemonic phrase in a safe place.
             It is the only way to recover your account if you ever forget your password.\n""")
-    print("Mnemonic: %s" % json_result["mnemonic"])
+        print("Mnemonic: %s" % json_result["mnemonic"])
 
     print()
     share_pubkey_in_spreadsheet(json_result["name"], json_result["pubkey"], config["spreadsheet_id"], google_api_token)
