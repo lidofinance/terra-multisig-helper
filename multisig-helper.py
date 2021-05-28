@@ -628,11 +628,11 @@ def generate_multisig_account(name, ledger, google_api_token, config_path):
                 continue
 
             add_pubkey_command = "terracli keys add %s --pubkey=%s" % (value[0], value[1])
-            result = subprocess.run(add_pubkey_command.split(), capture_output=True, text=True)
+            result_cmd = subprocess.run(add_pubkey_command.split(), capture_output=True, text=True)
             try:
-                result.check_returncode()
+                result_cmd.check_returncode()
             except subprocess.CalledProcessError:
-                print("Error occurred:", result.stderr)
+                print("Error occurred:", result_cmd.stderr)
                 exit(1)
             print("Done")
 
