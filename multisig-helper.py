@@ -438,7 +438,7 @@ def issue_tx(tx_id, broadcast, chain_id, multisig_account_name, node, ledger, go
 def new_tx(tx_type, tx_file, account_name, description, google_api_token, config_path):
     """Creates a new folder with unsigned_tx, makes a pull request and updates the Google Sheets spreadsheet\n
 
-    TX_TYPE - a small title of the transaction (name, type, etc.)\n
+    TX_TYPE - a small title of the transaction without spaces (name, type, etc.).\n
     TX_FILE - a path to an unsigned tx file"""
 
     if description == "":
