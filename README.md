@@ -253,15 +253,14 @@ Where the most important part is TX ID. This id is required for the next steps.
 ##### 4) Sign a transaction
 
 ```shell
-foo@bar:~$ ./multisig-helper.py sign TX_ID ACCOUNT_NAME
+foo@bar:~$ ./multisig-helper.py sign TX_ID
 ```
 
 * TX_ID is a number from the previous step
-* ACCOUNT_NAME is the name of the your terracli account created previously
 
 In this case command looks like:
 ```shell
-foo@bar:~$ ./multisig-helper.py sign 1 test1
+foo@bar:~$ ./multisig-helper.py sign 1
 Transaction send_money_to_trofim successfully signed by test1
 See signature on github: https://github.com/lidofinance/terra-multisig-testnet/blob/send_money_to_trofim_2021-04-28/send_money_to_trofim_2021-04-28/test1_sign.json
 Updating Google Sheets...
