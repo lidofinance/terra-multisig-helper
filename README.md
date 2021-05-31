@@ -226,7 +226,7 @@ The command will generate an unsigned transaction and save it to unsignedTx.json
 ```shell
 foo@bar:~$ ./multisig-helper.py new-tx "send_money_to_trofim" unsignedTx.json test1 --description "description of your tx, optional"
 ```
-* "send_money_to_trofim" - just a little title of the transaction.
+* "send_money_to_trofim" - just a little title of the transaction (without spaces!).
 * unsignedTx.json - a path to an unsigned tx file from previous step
 * test1 - a name of your private account (not a multisig!) generated previously.
 * --description - optional flag to provide an additional info about the transaction
