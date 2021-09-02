@@ -7,7 +7,7 @@
 
 #### Step 1. Download binaries
 
-Download an archive with binaries for your platform from the official Terra [repository](https://github.com/terra-project/core/releases/tag/v0.4.4)
+Download an archive with binaries for your platform from the official Terra [repository](https://github.com/terra-project/core/releases/tag/v0.5.1)
 
 #### Step 2. Install binaries
 
@@ -15,26 +15,25 @@ Open a folder with the downloaded archive in a terminal and execute one the foll
 
 ##### MacOS installation:
 ```shell
-foo@bar:~$ tar -C /usr/local/bin -xzf terra_0.4.4_Darwin_x86_64.tar && mv /usr/local/bin/libgo_cosmwasm.dylib /usr/local/lib/
+foo@bar:~$ tar -C /usr/local/bin -xzf terra_0.5.1_Darwin_x86_64.tar.gz && mv /usr/local/bin/libgo_cosmwasm.dylib /usr/local/lib/
 ```
 
 ##### Linux installation:
 ```shell
-foo@bar:~$ tar -C /usr/local/bin -xzf terra_0.4.4_Linux_x86_64.tar
+foo@bar:~$ tar -C /usr/local/bin -xzf terra_0.5.1_Linux_x86_64.tar.gz
 ```
 
 #### Step 4: Verify your installation
 
 Verify that everything is OK. If you get something like the following, you've successfully installed Terra Core on your system.
 ```shell
-foo@bar:~$ terracli version --long
+foo@bar:~$ terrad version --long
 name: terra
 server_name: terrad
-client_name: terracli
-version: 0.3.0-24-g3684f77
-commit: 3684f77faadf6cf200d18e15763316d5d9c5a496
+version: 0.5.2-2-gf41a7de
+commit: f41a7de7e1c06ab836d50381c6fe918b64a73483
 build_tags: netgo,ledger
-go: go version go1.13.4 darwin/amd64
+go: go version go1.15.6 darwin/amd64
 ```
 
 ### Building Terra software from source (skip this, if you've installed prebuilt binaries)
@@ -47,17 +46,17 @@ If you haven't already, install Golang by following the [official docs](https://
 
 #### Step 2: Get Terra Core source code
 
-Use `git` to retrieve Terra Core from the [official repo](https://github.com/terra-project/core/), and checkout the `master` branch, which contains the latest stable release. That should install the `terrad` and `terracli` binaries.
+Use `git` to retrieve Terra Core from the [official repo](https://github.com/terra-project/core/), and checkout the `main` branch, which contains the latest stable release. That should install the `terrad` binary.
 
 ```bash
 foo@bar:~$ git clone https://github.com/terra-project/core
 foo@bar:~$ cd core
-foo@bar:~$ git checkout master
+foo@bar:~$ git checkout main
 ```
 
 #### Step 3: Build from source
 
-You can now build Terra Core. Running the following command will install executables `terrad` (Terra node daemon) and `terracli` (CLI for interacting with the node) to your `GOPATH`.
+You can now build Terra Core. Running the following command will install executables `terrad` to your `GOPATH`.
 
 ```bash
 foo@bar:~$ make install
@@ -67,14 +66,13 @@ foo@bar:~$ make install
 
 Verify that everything is OK. If you get something like the following, you've successfully installed Terra Core on your system.
 ```shell
-foo@bar:~$ terracli version --long
+foo@bar:~$ terrad version --long
 name: terra
 server_name: terrad
-client_name: terracli
-version: 0.3.0-24-g3684f77
-commit: 3684f77faadf6cf200d18e15763316d5d9c5a496
+version: 0.5.2-2-gf41a7de
+commit: f41a7de7e1c06ab836d50381c6fe918b64a73483
 build_tags: netgo,ledger
-go: go version go1.13.4 darwin/amd64
+go: go version go1.15.6 darwin/amd64
 ```
 
 ### Multisig Helper
@@ -123,7 +121,7 @@ But just in case there is an [instruction](https://github.com/lidofinance/terra-
 #### Networks
 | Chain ID       | Description        | RPC Node                      |
 | -------------- | ------------------ | ----------------------------- |
-| `tequila-0004` | Columbus-4 Testnet | http://15.164.0.235:26657     |
+| `bombay-10   ` | Bombay-10 Testnet  |                               |
 
 #### Usage
 
@@ -210,7 +208,7 @@ Let's see usage of the script on a little example where we want to send 5 Lunas 
 ##### 1) Create the multisig transaction
 
 ```shell
-foo@bar:~$ terracli tx send \
+foo@bar:~$ terrad tx bank send \
     terra1e0fx0q9meawrcq7fmma9x60gk35lpr4xk3884m \
     terra17htaxslph9mvyunj4clgw9mcrglqjej4l6pcxg \
     5000000uluna \

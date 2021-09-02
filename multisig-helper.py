@@ -53,7 +53,7 @@ def get_threshold_number(config, token_file):
 
 
 def get_multisig_address(multisig_account_name):
-    get_multisig_address_command = ["terracli", "keys", "show", multisig_account_name, "-a"]
+    get_multisig_address_command = ["terrad", "keys", "show", multisig_account_name, "-a"]
 
     result = subprocess.run(
         get_multisig_address_command, capture_output=True, text=True)
@@ -91,7 +91,7 @@ def is_token_valid(config, access_token):
 
 
 def key_exists(key_name, ledger):
-    generate_key_command = ["terracli", "keys",
+    generate_key_command = ["terrad", "keys",
                             "show", key_name, "--output=json"]
     if ledger:
         generate_key_command.append("--ledger")
@@ -225,7 +225,7 @@ def sign(tx_id, account_name, multisig_account_name, chain_id, node, ledger, goo
     unsigned_tx_file.write(unsigned_tx_content)
     unsigned_tx_file.flush()
 
-    sign_command = ["terracli", "tx", "sign", "/tmp/unsigned_tx.json",
+    sign_command = ["terrad", "tx", "sign", "/tmp/unsigned_tx.json",
                     "--multisig=%s" % get_multisig_address(multisig_account_name), "--from=%s" % account_name]
     if chain_id != "":
         sign_command.append("--chain-id=%s" % chain_id)
@@ -334,7 +334,7 @@ def issue_tx(tx_id, broadcast, chain_id, multisig_account_name, node, ledger, go
         sig_file.flush()
         signatures.append(local_name)
 
-    multisign_command = ["terracli", "tx",
+    multisign_command = ["terrad", "tx",
                          "multisign", "/tmp/unsigned_tx.json", multisig_account_name]
     multisign_command.extend(signatures)
     if chain_id != "":
@@ -387,7 +387,7 @@ def issue_tx(tx_id, broadcast, chain_id, multisig_account_name, node, ledger, go
         with open("/tmp/signed_tx.json", "w+") as f:
             f.write(result.stdout)
             f.flush()
-        broadcast_command = ["terracli", "tx", "broadcast", "/tmp/signed_tx.json", "--broadcast-mode=block", "-y",
+        broadcast_command = ["terrad", "tx", "broadcast", "/tmp/signed_tx.json", "--broadcast-mode=block", "-y",
                              "--output=json"]
         if chain_id != "":
             broadcast_command.append("--chain-id=%s" % chain_id)
@@ -512,7 +512,7 @@ def update_tx(tx_id, tx_file, config_path):
 
 def share_pubkey_in_spreadsheet(keyname, pubkey, spreadsheet_id, google_api_token):
     print("Updating Google Sheets...")
-    add_pubkey_command = "terracli keys add %s --pubkey=%s" % (keyname, pubkey)
+    add_pubkey_command = "terrad keys add %s --pubkey=%s" % (keyname, pubkey)
     sheet = get_sheet(google_api_token)
     body = {
         'values': [[keyname, pubkey, add_pubkey_command]]
@@ -544,7 +544,7 @@ def generate_key(name, ledger, google_api_token, config_path):
         print('If you want to use the existed key, execute "share-pubkey" command.')
         return
 
-    generate_key_command = ["terracli", "keys",
+    generate_key_command = ["terrad", "keys",
                             "add", key_name, "--output=json"]
     if ledger:
         generate_key_command.append("--ledger")
@@ -556,7 +556,7 @@ def generate_key(name, ledger, google_api_token, config_path):
         print("Error occurred:", result.stderr)
         exit(1)
 
-    json_result = json.loads(result.stderr)
+    json_result = json.loads(result.stdout)
 
     print("name: %s" % json_result["name"])
     print("address: %s" % json_result["address"])
@@ -585,7 +585,7 @@ def share_pubkey(name, ledger, google_api_token, config_path):
     if key_name == "":
         key_name = g.get_user().login
 
-    get_key_command = ["terracli", "keys",
+    get_key_command = ["terrad", "keys",
                        "show", key_name, "-p"]
     if ledger:
         get_key_command.append("--ledger")
@@ -627,7 +627,7 @@ def generate_multisig_account(name, ledger, google_api_token, config_path):
                 print('Key with name "%s" already exists. Remove the existed key or rename it' % value[0])
                 continue
 
-            add_pubkey_command = "terracli keys add %s --pubkey=%s" % (value[0], value[1])
+            add_pubkey_command = "terrad keys add %s --pubkey='%s'" % (value[0], value[1])
             result_cmd = subprocess.run(add_pubkey_command.split(), capture_output=True, text=True)
             try:
                 result_cmd.check_returncode()
@@ -638,7 +638,7 @@ def generate_multisig_account(name, ledger, google_api_token, config_path):
 
     participants = sorted([x[0] for x in result["values"]])
     multisig_account_name = "_".join(participants) + "_multisig"
-    create_multisig_account_command = ["terracli", "keys", "add", multisig_account_name,
+    create_multisig_account_command = ["terrad", "keys", "add", multisig_account_name,
                                        "--multisig=%s" % ",".join(participants),
                                        "--multisig-threshold=%d" % get_threshold_number(config, google_api_token),
                                        "--output=json"]
@@ -654,7 +654,7 @@ def generate_multisig_account(name, ledger, google_api_token, config_path):
 
     print()
     print("Generating multisig account")
-    result = subprocess.run("terracli keys show %s --output=json" % multisig_account_name, capture_output=True,
+    result = subprocess.run("terrad keys show %s --output=json" % multisig_account_name, capture_output=True,
                             text=True, shell=True)
     try:
         result.check_returncode()
