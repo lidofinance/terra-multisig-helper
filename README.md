@@ -96,8 +96,6 @@ foo@bar:~$ git clone git@github.com:lidofinance/terra-multisig-helper.git
 
 foo@bar:~$ cd terra-multisig-testnet
 
-foo@bar:~$ git checkout feat/columbus-5
-
 foo@bar:~$ pip3 install -r requirements.txt
 ```
 
