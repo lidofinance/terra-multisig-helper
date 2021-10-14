@@ -121,7 +121,7 @@ But just in case there is an [instruction](https://github.com/lidofinance/terra-
 #### Networks
 | Chain ID       | Description        | RPC Node                      |
 | -------------- | ------------------ | ----------------------------- |
-| `bombay-10   ` | Bombay-10 Testnet  |                               |
+| `bombay-12   ` | Bombay-12 Testnet  | tcp://3.34.120.243:26657      |
 
 #### Usage
 
