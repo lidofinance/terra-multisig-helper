@@ -7,7 +7,7 @@
 
 #### Step 1. Download binaries
 
-Download an archive with binaries for your platform from the official Terra [repository](https://github.com/terra-project/core/releases/tag/v0.5.1)
+Download an archive with binaries for your platform from the official Terra [repository](https://github.com/terra-money/core/releases/tag/v0.5.7)
 
 #### Step 2. Install binaries
 
@@ -15,12 +15,12 @@ Open a folder with the downloaded archive in a terminal and execute one the foll
 
 ##### MacOS installation:
 ```shell
-foo@bar:~$ tar -C /usr/local/bin -xzf terra_0.5.1_Darwin_x86_64.tar.gz && mv /usr/local/bin/libgo_cosmwasm.dylib /usr/local/lib/
+foo@bar:~$ tar -C /usr/local/bin -xzf terra_0.5.7_Darwin_x86_64.tar.gz && mv /usr/local/bin/libgo_cosmwasm.dylib /usr/local/lib/
 ```
 
 ##### Linux installation:
 ```shell
-foo@bar:~$ tar -C /usr/local/bin -xzf terra_0.5.1_Linux_x86_64.tar.gz
+foo@bar:~$ tar -C /usr/local/bin -xzf terra_0.5.7_Linux_x86_64.tar.gz
 ```
 
 #### Step 4: Verify your installation
@@ -30,10 +30,10 @@ Verify that everything is OK. If you get something like the following, you've su
 foo@bar:~$ terrad version --long
 name: terra
 server_name: terrad
-version: 0.5.2-2-gf41a7de
-commit: f41a7de7e1c06ab836d50381c6fe918b64a73483
+version: 0.5.7
+commit: 1581f2f7117b51363f0aca8127fcea8325cee928
 build_tags: netgo,ledger
-go: go version go1.15.6 darwin/amd64
+go: go version go1.17.1 darwin/amd64
 ```
 
 ### Building Terra software from source (skip this, if you've installed prebuilt binaries)
@@ -69,10 +69,10 @@ Verify that everything is OK. If you get something like the following, you've su
 foo@bar:~$ terrad version --long
 name: terra
 server_name: terrad
-version: 0.5.2-2-gf41a7de
-commit: f41a7de7e1c06ab836d50381c6fe918b64a73483
+version: 0.5.7
+commit: 1581f2f7117b51363f0aca8127fcea8325cee928
 build_tags: netgo,ledger
-go: go version go1.15.6 darwin/amd64
+go: go version go1.17.1 darwin/amd64
 ```
 
 ### Multisig Helper
