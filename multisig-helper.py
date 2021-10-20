@@ -627,7 +627,7 @@ def generate_multisig_account(name, ledger, google_api_token, config_path):
                 print('Key with name "%s" already exists. Remove the existed key or rename it' % value[0])
                 continue
 
-            add_pubkey_command = "terrad keys add %s --pubkey='%s'" % (value[0], value[1])
+            add_pubkey_command = "terrad keys add %s --pubkey=%s" % (value[0], value[1])
             result_cmd = subprocess.run(add_pubkey_command.split(), capture_output=True, text=True)
             try:
                 result_cmd.check_returncode()
