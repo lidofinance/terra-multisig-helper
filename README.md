@@ -96,6 +96,12 @@ foo@bar:~$ git clone git@github.com:lidofinance/terra-multisig-helper.git
 
 foo@bar:~$ cd terra-multisig-helper
 
+foo@bar:~$ pip3 install virtualenv
+
+foo@bar:~$ virtualenv venv
+
+foo@bar:~$ source venv/bin/activate
+
 foo@bar:~$ pip3 install -r requirements.txt
 ```
 
@@ -189,7 +195,7 @@ Additionally,  the command will update the spreadsheet in Google Sheets by addin
 
 ##### Create the multisig key
 
-To create a multisig account you need to import a public of every participant of the process and after that generate a multisig account and save it to your local keybase.
+To create a multisig account you need to import public keys of every participant of the process and after that generate a multisig account and save it to your local keybase.
 
 That's a lot of commands, but with the helper script you can execute just one:
 
@@ -263,14 +269,14 @@ Where the most important part is TX ID. This id is required for the next steps.
 ##### 4) Sign a transaction
 
 ```shell
-foo@bar:~$ ./multisig-helper.py sign TX_ID
+foo@bar:~$ ./multisig-helper.py sign TX_ID --chain-id="bombay-12" --node="tcp://3.34.120.243:26657"
 ```
 
 * TX_ID is a number from the previous step
 
 In this case command looks like:
 ```shell
-foo@bar:~$ ./multisig-helper.py sign 1
+foo@bar:~$ ./multisig-helper.py sign 1 --chain-id="bombay-12" --node="tcp://3.34.120.243:26657"
 Transaction send_money_to_trofim successfully signed by test1
 See signature on github: https://github.com/lidofinance/terra-multisig-testnet/blob/send_money_to_trofim_2021-04-28/send_money_to_trofim_2021-04-28/test1_sign.json
 Updating Google Sheets...
@@ -292,7 +298,7 @@ And you'll see that tx is signed by test1.
 When a sufficient number of participants have signed a transaction, anyone can issue it:
 
 ```shell
-foo@bar:~$ ./multisig-helper.py issue-tx TX_ID
+foo@bar:~$ ./multisig-helper.py issue-tx TX_ID --chain-id="bombay-12" --node="tcp://3.34.120.243:26657"
 ```
 
 The command will create a multisig transaction, merge a corresponding PR in the repository and update the spreadsheet.
@@ -301,7 +307,7 @@ But if you specify `--broadcast` flag, the command will broadcast the transactio
 
 In our case the command looks like:
 ```shell
-foo@bar:~$ ./multisig-helper.py issue-tx TX_ID
+foo@bar:~$ ./multisig-helper.py issue-tx TX_ID --chain-id="bombay-12" --node="tcp://3.34.120.243:26657"
 
 PR #1 has merged successfully
 Updating Google Sheets...
