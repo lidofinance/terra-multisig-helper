@@ -15,7 +15,7 @@ Open a folder with the downloaded archive in a terminal and execute one the foll
 
 ##### MacOS installation:
 ```shell
-foo@bar:~$ tar -C /usr/local/bin -xzf terra_0.5.1_Darwin_x86_64.tar.gz && mv /usr/local/bin/libgo_cosmwasm.dylib /usr/local/lib/
+foo@bar:~$ tar -C /usr/local/bin -xzf terra_0.5.1_Darwin_x86_64.tar.gz && mv /usr/local/bin/libwasmvm.dylib /usr/local/lib/
 ```
 
 ##### Linux installation:
@@ -94,7 +94,7 @@ The script simplifies a process of signing, sharing signatures and updating a sp
 ```shell
 foo@bar:~$ git clone git@github.com:lidofinance/terra-multisig-helper.git
 
-foo@bar:~$ cd terra-multisig-testnet
+foo@bar:~$ cd terra-multisig-helper
 
 foo@bar:~$ pip3 install -r requirements.txt
 ```
@@ -151,6 +151,18 @@ To see more info about particular command, just specify `--help` flag when execu
 
 ##### Generate keys
 
+###### Sharing existing pubkey
+If you have keys from the previous multisig run, or you already have generated keys in Ledger, execute `share-pubkey` command:
+
+```shell
+foo@bar:~$ ./multisig-helper.py share-pubkey --name your_key_name
+
+Updating Google Sheets...
+Done
+```
+* `your_key_name` is the name of your key account. You will use this name to identify your account when you want to sign a transaction. The helper script uses your Github username by default, but you can change it by specifying `--name` flag in the command.*
+
+###### Generate keys from scratch
 You'll need an account private and public key pair (a.k.a. sk, pk respectively) to be able to be a part of a multisig account.
 
 To generate an account, just use the following command:
@@ -214,7 +226,7 @@ foo@bar:~$ terrad tx bank send \
     5000000uluna \
     --gas=200000 \
     --fees=100000uluna \
-    --chain-id=localterra \
+    --chain-id=bombay-12 \
     --generate-only > unsignedTx.json
 ```
 The command will generate an unsigned transaction and save it to unsignedTx.json
