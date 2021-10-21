@@ -624,8 +624,20 @@ def generate_multisig_account(name, ledger, google_api_token, config_path):
         if value[0] != key_name:
             print("Adding key from %s..." % value[0])
             if key_exists(value[0], ledger):
-                print('Key with name "%s" already exists. Remove the existed key or rename it' % value[0])
-                continue
+                print('Key with name "%s" already exists!' % value[0])
+
+                reply = str(input('Rewrite it? (y/n): ')).lower().strip()
+                if reply != 'y':
+                    print("Multisig generation aborted")
+                    exit(1)
+
+                remove_pubkey_command = "terrad keys delete %s -y" % (value[0])
+                result_cmd = subprocess.run(remove_pubkey_command.split(), capture_output=True, text=True)
+                try:
+                    result_cmd.check_returncode()
+                except subprocess.CalledProcessError:
+                    print("Error occurred:", result_cmd.stderr)
+                    exit(1)
 
             add_pubkey_command = "terrad keys add %s --pubkey=%s" % (value[0], value[1])
             result_cmd = subprocess.run(add_pubkey_command.split(), capture_output=True, text=True)
@@ -638,6 +650,10 @@ def generate_multisig_account(name, ledger, google_api_token, config_path):
 
     participants = sorted([x[0] for x in result["values"]])
     multisig_account_name = "_".join(participants) + "_multisig"
+    if key_exists(multisig_account_name, ledger):
+        print("Multisig account with name '%s' already exists on your device! Remove it or rename" % multisig_account_name)
+        exit(1)
+
     create_multisig_account_command = ["terrad", "keys", "add", multisig_account_name,
                                        "--multisig=%s" % ",".join(participants),
                                        "--multisig-threshold=%d" % get_threshold_number(config, google_api_token),
