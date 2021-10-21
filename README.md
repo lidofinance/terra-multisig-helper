@@ -7,7 +7,7 @@
 
 #### Step 1. Download binaries
 
-Download an archive with binaries for your platform from the official Terra [repository](https://github.com/terra-project/core/releases/tag/v0.4.4)
+Download an archive with binaries for your platform from the official Terra [repository](https://github.com/terra-money/core/releases/tag/v0.5.7)
 
 #### Step 2. Install binaries
 
@@ -15,26 +15,25 @@ Open a folder with the downloaded archive in a terminal and execute one the foll
 
 ##### MacOS installation:
 ```shell
-foo@bar:~$ tar -C /usr/local/bin -xzf terra_0.4.4_Darwin_x86_64.tar && mv /usr/local/bin/libgo_cosmwasm.dylib /usr/local/lib/
+foo@bar:~$ tar -C /usr/local/bin -xzf terra_0.5.7_Darwin_x86_64.tar.gz && mv /usr/local/bin/libwasmvm.dylib /usr/local/lib/
 ```
 
 ##### Linux installation:
 ```shell
-foo@bar:~$ tar -C /usr/local/bin -xzf terra_0.4.4_Linux_x86_64.tar
+foo@bar:~$ tar -C /usr/local/bin -xzf terra_0.5.7_Linux_x86_64.tar.gz
 ```
 
 #### Step 4: Verify your installation
 
 Verify that everything is OK. If you get something like the following, you've successfully installed Terra Core on your system.
 ```shell
-foo@bar:~$ terracli version --long
+foo@bar:~$ terrad version --long
 name: terra
 server_name: terrad
-client_name: terracli
-version: 0.3.0-24-g3684f77
-commit: 3684f77faadf6cf200d18e15763316d5d9c5a496
+version: 0.5.7
+commit: 1581f2f7117b51363f0aca8127fcea8325cee928
 build_tags: netgo,ledger
-go: go version go1.13.4 darwin/amd64
+go: go version go1.17.1 darwin/amd64
 ```
 
 ### Building Terra software from source (skip this, if you've installed prebuilt binaries)
@@ -47,17 +46,17 @@ If you haven't already, install Golang by following the [official docs](https://
 
 #### Step 2: Get Terra Core source code
 
-Use `git` to retrieve Terra Core from the [official repo](https://github.com/terra-project/core/), and checkout the `master` branch, which contains the latest stable release. That should install the `terrad` and `terracli` binaries.
+Use `git` to retrieve Terra Core from the [official repo](https://github.com/terra-project/core/), and checkout the `main` branch, which contains the latest stable release. That should install the `terrad` binary.
 
 ```bash
 foo@bar:~$ git clone https://github.com/terra-project/core
 foo@bar:~$ cd core
-foo@bar:~$ git checkout master
+foo@bar:~$ git checkout main
 ```
 
 #### Step 3: Build from source
 
-You can now build Terra Core. Running the following command will install executables `terrad` (Terra node daemon) and `terracli` (CLI for interacting with the node) to your `GOPATH`.
+You can now build Terra Core. Running the following command will install executables `terrad` to your `GOPATH`.
 
 ```bash
 foo@bar:~$ make install
@@ -67,14 +66,13 @@ foo@bar:~$ make install
 
 Verify that everything is OK. If you get something like the following, you've successfully installed Terra Core on your system.
 ```shell
-foo@bar:~$ terracli version --long
+foo@bar:~$ terrad version --long
 name: terra
 server_name: terrad
-client_name: terracli
-version: 0.3.0-24-g3684f77
-commit: 3684f77faadf6cf200d18e15763316d5d9c5a496
+version: 0.5.7
+commit: 1581f2f7117b51363f0aca8127fcea8325cee928
 build_tags: netgo,ledger
-go: go version go1.13.4 darwin/amd64
+go: go version go1.17.1 darwin/amd64
 ```
 
 ### Multisig Helper
@@ -96,7 +94,13 @@ The script simplifies a process of signing, sharing signatures and updating a sp
 ```shell
 foo@bar:~$ git clone git@github.com:lidofinance/terra-multisig-helper.git
 
-foo@bar:~$ cd terra-multisig-testnet
+foo@bar:~$ cd terra-multisig-helper
+
+foo@bar:~$ pip3 install virtualenv
+
+foo@bar:~$ virtualenv venv
+
+foo@bar:~$ source venv/bin/activate
 
 foo@bar:~$ pip3 install -r requirements.txt
 ```
@@ -123,7 +127,7 @@ But just in case there is an [instruction](https://github.com/lidofinance/terra-
 #### Networks
 | Chain ID       | Description        | RPC Node                      |
 | -------------- | ------------------ | ----------------------------- |
-| `tequila-0004` | Columbus-4 Testnet | http://15.164.0.235:26657     |
+| `bombay-12   ` | Bombay-12 Testnet  | tcp://3.34.120.243:26657      |
 
 #### Usage
 
@@ -153,6 +157,18 @@ To see more info about particular command, just specify `--help` flag when execu
 
 ##### Generate keys
 
+###### Sharing existing pubkey
+If you have keys from the previous multisig run, or you already have generated keys in Ledger, execute `share-pubkey` command:
+
+```shell
+foo@bar:~$ ./multisig-helper.py share-pubkey --name your_key_name
+
+Updating Google Sheets...
+Done
+```
+* `your_key_name` is the name of your key account. You will use this name to identify your account when you want to sign a transaction. The helper script uses your Github username by default, but you can change it by specifying `--name` flag in the command.*
+
+###### Generate keys from scratch
 You'll need an account private and public key pair (a.k.a. sk, pk respectively) to be able to be a part of a multisig account.
 
 To generate an account, just use the following command:
@@ -179,7 +195,7 @@ Additionally,  the command will update the spreadsheet in Google Sheets by addin
 
 ##### Create the multisig key
 
-To create a multisig account you need to import a public of every participant of the process and after that generate a multisig account and save it to your local keybase.
+To create a multisig account you need to import public keys of every participant of the process and after that generate a multisig account and save it to your local keybase.
 
 That's a lot of commands, but with the helper script you can execute just one:
 
@@ -210,13 +226,13 @@ Let's see usage of the script on a little example where we want to send 5 Lunas 
 ##### 1) Create the multisig transaction
 
 ```shell
-foo@bar:~$ terracli tx send \
+foo@bar:~$ terrad tx bank send \
     terra1e0fx0q9meawrcq7fmma9x60gk35lpr4xk3884m \
     terra17htaxslph9mvyunj4clgw9mcrglqjej4l6pcxg \
     5000000uluna \
     --gas=200000 \
     --fees=100000uluna \
-    --chain-id=localterra \
+    --chain-id=bombay-12 \
     --generate-only > unsignedTx.json
 ```
 The command will generate an unsigned transaction and save it to unsignedTx.json
@@ -253,14 +269,14 @@ Where the most important part is TX ID. This id is required for the next steps.
 ##### 4) Sign a transaction
 
 ```shell
-foo@bar:~$ ./multisig-helper.py sign TX_ID
+foo@bar:~$ ./multisig-helper.py sign TX_ID --chain-id="bombay-12" --node="tcp://3.34.120.243:26657"
 ```
 
 * TX_ID is a number from the previous step
 
 In this case command looks like:
 ```shell
-foo@bar:~$ ./multisig-helper.py sign 1
+foo@bar:~$ ./multisig-helper.py sign 1 --chain-id="bombay-12" --node="tcp://3.34.120.243:26657"
 Transaction send_money_to_trofim successfully signed by test1
 See signature on github: https://github.com/lidofinance/terra-multisig-testnet/blob/send_money_to_trofim_2021-04-28/send_money_to_trofim_2021-04-28/test1_sign.json
 Updating Google Sheets...
@@ -282,7 +298,7 @@ And you'll see that tx is signed by test1.
 When a sufficient number of participants have signed a transaction, anyone can issue it:
 
 ```shell
-foo@bar:~$ ./multisig-helper.py issue-tx TX_ID
+foo@bar:~$ ./multisig-helper.py issue-tx TX_ID --chain-id="bombay-12" --node="tcp://3.34.120.243:26657"
 ```
 
 The command will create a multisig transaction, merge a corresponding PR in the repository and update the spreadsheet.
@@ -291,7 +307,7 @@ But if you specify `--broadcast` flag, the command will broadcast the transactio
 
 In our case the command looks like:
 ```shell
-foo@bar:~$ ./multisig-helper.py issue-tx TX_ID
+foo@bar:~$ ./multisig-helper.py issue-tx TX_ID --chain-id="bombay-12" --node="tcp://3.34.120.243:26657"
 
 PR #1 has merged successfully
 Updating Google Sheets...
