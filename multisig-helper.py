@@ -651,29 +651,37 @@ def generate_multisig_account(name, ledger, google_api_token, config_path):
                                 range=PARTICIPANTS_PUBKEY_CELLS).execute()
 
     for value in result["values"]:
-        if value[0] == key_name:
-            continue
-
-        print("Checking key from %s..." % value[0])
-
-        key = get_pubkey(value[0], ledger)
-
-        if key != value[1]:
-            print('Key with name "%s" and key from the sheet is not equal!' %
-                  value[0])
-            exit(1)
-
         print("Adding key from %s..." % value[0])
 
-        add_pubkey_command = "terrad keys add %s --pubkey=%s" % (
-            value[0], value[1])
-        result_cmd = subprocess.run(
-            add_pubkey_command.split(), capture_output=True, text=True)
-        try:
-            result_cmd.check_returncode()
-        except subprocess.CalledProcessError:
-            print("Error occurred:", result_cmd.stderr)
-            exit(1)
+        if value[0] == key_name:
+            remove_pubkey_command = "terrad keys delete %s -y" % (value[0])
+            result_cmd = subprocess.run(
+                remove_pubkey_command.split(), capture_output=True, text=True)
+            try:
+                result_cmd.check_returncode()
+            except subprocess.CalledProcessError:
+                print("Error occurred:", result_cmd.stderr)
+                exit(1)
+
+            add_pubkey_command = "terrad keys add %s --pubkey=%s" % (
+                value[0], value[1])
+            result_cmd = subprocess.run(
+                add_pubkey_command.split(), capture_output=True, text=True)
+
+            try:
+                result_cmd.check_returncode()
+            except subprocess.CalledProcessError:
+                print("Error occurred:", result_cmd.stderr)
+                exit(1)
+        else:
+            print("Checking key from %s..." % value[0])
+
+            key = get_pubkey(value[0], ledger)
+
+            if key != value[1]:
+                print('Key with name "%s" and key from the sheet is not equal!' %
+                      value[0])
+                exit(1)
 
         print("Done")
 
