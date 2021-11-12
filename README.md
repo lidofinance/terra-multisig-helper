@@ -117,6 +117,8 @@ Configuration of the script is located in `config.json` file:
 }
 ```
 
+[Google Sheets template](https://docs.google.com/spreadsheets/d/1qHD1L2hmXviaxU1Kxfi8mVrZmZPevHH5OUAqCAqXei4/edit?usp=sharing) for the helper. 
+
 You don't have to fill the file manually, a correct one will be shared in the private TG group.
 
 #### Google API token
