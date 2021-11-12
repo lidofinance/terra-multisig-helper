@@ -115,11 +115,13 @@ Configuration of the script is located in `config.json` file:
     "app_client_id": "XXXXXXXXX", // Client ID of Github App
     "spreadsheet_id": "XXXXXXXX" // ID of a spreadsheet contained tx and participants info
 }
-```
-
-[Google Sheets template](https://docs.google.com/spreadsheets/d/1qHD1L2hmXviaxU1Kxfi8mVrZmZPevHH5OUAqCAqXei4/edit?usp=sharing) for the helper. 
+``` 
 
 You don't have to fill the file manually, a correct one will be shared in the private TG group.
+
+But just in case:
+* [Google Sheets template](https://docs.google.com/spreadsheets/d/1qHD1L2hmXviaxU1Kxfi8mVrZmZPevHH5OUAqCAqXei4/edit?usp=sharing) for the helper.
+* [Instruction](https://github.com/lidofinance/terra-multisig-helper/blob/master/GOOGLE_SHEETS_TOKEN.md) on how to generate Github App Client ID manually.
 
 #### Google API token
 A pre-generated Google API token (with editor rights to the testnet spreadsheet only) will be shared in the private TG group.
