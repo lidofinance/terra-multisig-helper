@@ -666,7 +666,7 @@ def generate_multisig_account(name, ledger, google_api_token, config_path):
     if key_exists(multisig_account_name, ledger):
         print("Multisig account with name '%s' already exists on your device! Remove it or rename" %
               multisig_account_name)
-        # exit(1)
+        exit(1)
 
     create_multisig_account_command = ["terrad", "keys", "add", multisig_account_name,
                                        "--multisig=%s" % ",".join(
