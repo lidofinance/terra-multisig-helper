@@ -711,7 +711,7 @@ def generate_multisig_account(name, ledger, google_api_token, config_path):
     result = sheet.values().get(spreadsheetId=config["spreadsheet_id"],
                                 range=MULTISIG_ADDRESS_CELL).execute()
 
-    if not result["values"][0][0]:
+    if result.get("values") is None:
         sheet.values().update(
             spreadsheetId=config["spreadsheet_id"], range=MULTISIG_ADDRESS_CELL,
             body=body, valueInputOption="RAW").execute()
@@ -724,10 +724,11 @@ def generate_multisig_account(name, ledger, google_api_token, config_path):
             body=body, valueInputOption="RAW").execute()
 
         print("Done")
-
-    if result["values"][0][0] != json_result["address"]:
-        print("multisig address is not equal!")
-        exit(1)
+    else:
+        if result["values"][0][0] != json_result["address"]:
+            print(
+                "Your locally generated multisig address is not equal to the one in the Google Sheets!")
+            exit(1)
 
 
 if __name__ == '__main__':
