@@ -233,6 +233,7 @@ def sign(tx_id, account_name, multisig_account_name, chain_id, node, ledger, goo
         sign_command.append("--node=%s" % node)
     if ledger:
         sign_command.append("--ledger")
+        sign_command.append("--sign-mode=amino-json")
 
     result = subprocess.run(
         sign_command, capture_output=True, text=True)
