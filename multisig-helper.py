@@ -711,7 +711,7 @@ def generate_multisig_account(name, ledger, google_api_token, config_path):
     result = sheet.values().get(spreadsheetId=config["spreadsheet_id"],
                                 range=MULTISIG_ADDRESS_CELL).execute()
 
-    if result.get("values") is None:
+    if not result.get("values"):
         sheet.values().update(
             spreadsheetId=config["spreadsheet_id"], range=MULTISIG_ADDRESS_CELL,
             body=body, valueInputOption="RAW").execute()
