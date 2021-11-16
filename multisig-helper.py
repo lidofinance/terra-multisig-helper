@@ -53,7 +53,8 @@ def get_threshold_number(config, token_file):
 
 
 def get_multisig_address(multisig_account_name):
-    get_multisig_address_command = ["terrad", "keys", "show", multisig_account_name, "-a"]
+    get_multisig_address_command = [
+        "terrad", "keys", "show", multisig_account_name, "-a"]
 
     result = subprocess.run(
         get_multisig_address_command, capture_output=True, text=True)
@@ -96,7 +97,8 @@ def key_exists(key_name, ledger):
     if ledger:
         generate_key_command.append("--ledger")
 
-    result = subprocess.run(generate_key_command, capture_output=True, text=True)
+    result = subprocess.run(generate_key_command,
+                            capture_output=True, text=True)
     try:
         result.check_returncode()
     except subprocess.CalledProcessError:
@@ -207,7 +209,8 @@ def sign(tx_id, account_name, multisig_account_name, chain_id, node, ledger, goo
         account_name = g.get_user().login
 
     if multisig_account_name == "":
-        multisig_account_name = get_multisig_account_name(config, google_api_token)
+        multisig_account_name = get_multisig_account_name(
+            config, google_api_token)
 
     repo = g.get_repo(config["repo_name"])
     pull = repo.get_pull(int(tx_id))
@@ -254,7 +257,8 @@ def sign(tx_id, account_name, multisig_account_name, chain_id, node, ledger, goo
             "unsigned_tx.json", "%s_sign.json" % account_name), "%s sign" % account_name, result.stdout,
             branch=pull.head.ref)
 
-    print("Transaction %s successfully signed by %s" % (pull.title, account_name,))
+    print("Transaction %s successfully signed by %s" %
+          (pull.title, account_name,))
     print("See signature on github: %s" % file["content"].html_url)
 
     print("Updating Google Sheets...")
@@ -304,7 +308,8 @@ def issue_tx(tx_id, broadcast, chain_id, multisig_account_name, node, ledger, go
     files = pull.get_files()
 
     if multisig_account_name == "":
-        multisig_account_name = get_multisig_account_name(config, google_api_token)
+        multisig_account_name = get_multisig_account_name(
+            config, google_api_token)
 
     unsigned_tx_filename = list(
         filter(lambda item: item.filename.endswith("unsigned_tx.json"), files))
@@ -359,7 +364,8 @@ def issue_tx(tx_id, broadcast, chain_id, multisig_account_name, node, ledger, go
 
     pull = repo.get_pull(int(tx_id))
 
-    pull.merge("signed tx", "signed tx", merge_method="merge", sha=file["commit"].sha)
+    pull.merge("signed tx", "signed tx",
+               merge_method="merge", sha=file["commit"].sha)
 
     print("PR #%d has merged successfully" % pull.number)
 
@@ -397,7 +403,8 @@ def issue_tx(tx_id, broadcast, chain_id, multisig_account_name, node, ledger, go
         if ledger:
             broadcast_command.append("--ledger")
 
-        result = subprocess.run(broadcast_command, capture_output=True, text=True)
+        result = subprocess.run(
+            broadcast_command, capture_output=True, text=True)
         try:
             result.check_returncode()
         except subprocess.CalledProcessError:
@@ -550,7 +557,8 @@ def generate_key(name, ledger, google_api_token, config_path):
     if ledger:
         generate_key_command.append("--ledger")
 
-    result = subprocess.run(generate_key_command, capture_output=True, text=True)
+    result = subprocess.run(generate_key_command,
+                            capture_output=True, text=True)
     try:
         result.check_returncode()
     except subprocess.CalledProcessError:
@@ -568,7 +576,8 @@ def generate_key(name, ledger, google_api_token, config_path):
         print("Mnemonic: %s" % json_result["mnemonic"])
 
     print()
-    share_pubkey_in_spreadsheet(json_result["name"], json_result["pubkey"], config["spreadsheet_id"], google_api_token)
+    share_pubkey_in_spreadsheet(
+        json_result["name"], json_result["pubkey"], config["spreadsheet_id"], google_api_token)
 
 
 @cli.command()
@@ -598,7 +607,8 @@ def share_pubkey(name, ledger, google_api_token, config_path):
         print("Error occurred:", result.stderr)
         exit(1)
 
-    share_pubkey_in_spreadsheet(key_name, result.stdout.rstrip(), config["spreadsheet_id"], google_api_token)
+    share_pubkey_in_spreadsheet(
+        key_name, result.stdout.rstrip(), config["spreadsheet_id"], google_api_token)
 
 
 @cli.command()
@@ -633,15 +643,18 @@ def generate_multisig_account(name, ledger, google_api_token, config_path):
                     exit(1)
 
                 remove_pubkey_command = "terrad keys delete %s -y" % (value[0])
-                result_cmd = subprocess.run(remove_pubkey_command.split(), capture_output=True, text=True)
+                result_cmd = subprocess.run(
+                    remove_pubkey_command.split(), capture_output=True, text=True)
                 try:
                     result_cmd.check_returncode()
                 except subprocess.CalledProcessError:
                     print("Error occurred:", result_cmd.stderr)
                     exit(1)
 
-            add_pubkey_command = "terrad keys add %s --pubkey=%s" % (value[0], value[1])
-            result_cmd = subprocess.run(add_pubkey_command.split(), capture_output=True, text=True)
+            add_pubkey_command = "terrad keys add %s --pubkey=%s" % (
+                value[0], value[1])
+            result_cmd = subprocess.run(
+                add_pubkey_command.split(), capture_output=True, text=True)
             try:
                 result_cmd.check_returncode()
             except subprocess.CalledProcessError:
@@ -652,17 +665,21 @@ def generate_multisig_account(name, ledger, google_api_token, config_path):
     participants = sorted([x[0] for x in result["values"]])
     multisig_account_name = "_".join(participants) + "_multisig"
     if key_exists(multisig_account_name, ledger):
-        print("Multisig account with name '%s' already exists on your device! Remove it or rename" % multisig_account_name)
+        print("Multisig account with name '%s' already exists on your device! Remove it or rename" %
+              multisig_account_name)
         exit(1)
 
     create_multisig_account_command = ["terrad", "keys", "add", multisig_account_name,
-                                       "--multisig=%s" % ",".join(participants),
-                                       "--multisig-threshold=%d" % get_threshold_number(config, google_api_token),
+                                       "--multisig=%s" % ",".join(
+                                           participants),
+                                       "--multisig-threshold=%d" % get_threshold_number(
+                                           config, google_api_token),
                                        "--output=json"]
     if ledger:
         create_multisig_account_command.append("--ledger")
 
-    result = subprocess.run(create_multisig_account_command, capture_output=True, text=True)
+    result = subprocess.run(create_multisig_account_command,
+                            capture_output=True, text=True)
     try:
         result.check_returncode()
     except subprocess.CalledProcessError:
@@ -691,18 +708,28 @@ def generate_multisig_account(name, ledger, google_api_token, config_path):
     body = {
         'values': [[json_result["address"]]]
     }
-    sheet.values().update(
-        spreadsheetId=config["spreadsheet_id"], range=MULTISIG_ADDRESS_CELL,
-        body=body, valueInputOption="RAW").execute()
 
-    body = {
-        'values': [[" ".join(create_multisig_account_command)]]
-    }
-    sheet.values().update(
-        spreadsheetId=config["spreadsheet_id"], range=GENERATE_MULTISIG_COMMAND_CELL,
-        body=body, valueInputOption="RAW").execute()
+    result = sheet.values().get(spreadsheetId=config["spreadsheet_id"],
+                                range=MULTISIG_ADDRESS_CELL).execute()
 
-    print("Done")
+    if not result.get("values"):
+        sheet.values().update(
+            spreadsheetId=config["spreadsheet_id"], range=MULTISIG_ADDRESS_CELL,
+            body=body, valueInputOption="RAW").execute()
+
+        body = {
+            'values': [[" ".join(create_multisig_account_command)]]
+        }
+        sheet.values().update(
+            spreadsheetId=config["spreadsheet_id"], range=GENERATE_MULTISIG_COMMAND_CELL,
+            body=body, valueInputOption="RAW").execute()
+
+        print("Done")
+    else:
+        if result["values"][0][0] != json_result["address"]:
+            print(
+                "Your locally generated multisig address is not equal to the one in the Google Sheets!")
+            exit(1)
 
 
 if __name__ == '__main__':
