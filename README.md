@@ -131,6 +131,7 @@ But just in case there is an [instruction](https://github.com/lidofinance/terra-
 #### Networks
 | Chain ID       | Description        | RPC Node                      |
 | -------------- | ------------------ | ----------------------------- |
+| `columbus-5  ` | Columbus-5 Mainnet | http://public-node.terra.dev:26657     |
 | `bombay-12   ` | Bombay-12 Testnet  | tcp://3.34.120.243:26657      |
 
 #### Usage
