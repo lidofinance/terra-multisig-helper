@@ -689,7 +689,7 @@ def generate_multisig_account(name, ledger, google_api_token, config_path):
     print()
     print("Generating multisig account")
     result = subprocess.run("terrad keys show %s --output=json" % multisig_account_name, capture_output=True,
-                            text=True, shell=True)
+                            text=True)
     try:
         result.check_returncode()
     except subprocess.CalledProcessError:
